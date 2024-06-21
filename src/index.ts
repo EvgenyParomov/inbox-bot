@@ -1,6 +1,10 @@
-import { Telegraf } from "telegraf";
-import { message } from "telegraf/filters";
+import { Scenes, session, Telegraf } from "telegraf";
 import { z } from "zod";
+import type { AppContext } from "./shared/context";
+import { ONBOARDING_SCENE_ID, onboardingScene } from "./scenes/onboarding";
+import { noteScene } from "./scenes/note";
+import { askTokenScene } from "./scenes/ask-token";
+import { askInboxPageScene } from "./scenes/ask-inbox-page";
 
 const EnvSchema = z.object({
   BOT_TOKEN: z.string(),
@@ -10,36 +14,21 @@ const EnvSchema = z.object({
 
 const env = EnvSchema.parse(process.env);
 
-const bot = new Telegraf(env.BOT_TOKEN);
+const bot = new Telegraf<AppContext>(env.BOT_TOKEN);
 
-bot.command("quit", async (ctx) => {
-  // Explicit usage
-  await ctx.telegram.leaveChat(ctx.message.chat.id);
+const stage = new Scenes.Stage<AppContext>(
+  [onboardingScene, noteScene, askTokenScene, askInboxPageScene],
+  {
+    ttl: 10,
+  }
+);
 
-  // Using context shortcut
-  await ctx.leaveChat();
+bot.use(session());
+bot.use(stage.middleware());
+
+bot.start((ctx) => {
+  ctx.scene.enter(ONBOARDING_SCENE_ID);
 });
-
-bot.on(message("text"), async (ctx) => {
-  // Explicit usage
-  await ctx.telegram.sendMessage(
-    ctx.message.chat.id,
-    `Hello ${ctx.state.role}`
-  );
-
-  // Using context shortcut
-  await ctx.reply(`Hello worlds ${ctx.state.role}`);
-});
-
-bot.on("callback_query", async (ctx) => {
-  // Explicit usage
-  await ctx.telegram.answerCbQuery(ctx.callbackQuery.id);
-
-  // Using context shortcut
-  await ctx.answerCbQuery();
-});
-
-process.env.NODE_ENV;
 
 if (env.WEBHOOK_PORT && env.WEBHOOK_DOMAIN) {
   console.log("Webhook start");
