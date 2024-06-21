@@ -4,6 +4,8 @@ import { z } from "zod";
 
 const EnvSchema = z.object({
   BOT_TOKEN: z.string(),
+  WEBHOOK_DOMAIN: z.string().optional(),
+  WEBHOOK_PORT: z.coerce.number().optional(),
 });
 
 const env = EnvSchema.parse(process.env);
@@ -37,9 +39,26 @@ bot.on("callback_query", async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-bot.launch();
+process.env.NODE_ENV;
+
+if (env.WEBHOOK_PORT && env.WEBHOOK_DOMAIN) {
+  console.log("Webhook start");
+  bot.launch({
+    webhook: {
+      // Public domain for webhook; e.g.: example.com
+      domain: env.WEBHOOK_DOMAIN,
+
+      // Port to listen on; e.g.: 8080
+      port: env.WEBHOOK_PORT,
+    },
+  });
+} else {
+  console.log("Long polling start");
+  bot.launch();
+}
+
+// Start webhook via launch method (preferred)
 
 // Enable graceful stop
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
-console.log("Bot Started");

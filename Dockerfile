@@ -35,6 +35,11 @@ COPY --from=prerelease /usr/src/app/package.json .
 ARG BOT_TOKEN
 ENV BOT_TOKEN=$BOT_TOKEN
 
+ARG WEBHOOK_DOMAIN
+ENV WEBHOOK_DOMAIN=$WEBHOOK_DOMAIN
+
+ENV WEBHOOK_PORT=3000
+
 # run the app
 USER bun
 EXPOSE 3000/tcp
