@@ -26,7 +26,7 @@ bot.on(message("text"), async (ctx) => {
   );
 
   // Using context shortcut
-  await ctx.reply(`Hello ${ctx.state.role}`);
+  await ctx.reply(`Hello worlds ${ctx.state.role}`);
 });
 
 bot.on("callback_query", async (ctx) => {
