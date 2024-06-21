@@ -5,11 +5,14 @@ import { ONBOARDING_SCENE_ID, onboardingScene } from "./scenes/onboarding";
 import { noteScene } from "./scenes/note";
 import { askTokenScene } from "./scenes/ask-token";
 import { askInboxPageScene } from "./scenes/ask-inbox-page";
+import { Postgres } from "@telegraf/session/pg";
+import * as parsePgUrl from "pg-connection-string";
 
 const EnvSchema = z.object({
   BOT_TOKEN: z.string(),
   WEBHOOK_DOMAIN: z.string().optional(),
   WEBHOOK_PORT: z.coerce.number().optional(),
+  PG_URL: z.string().optional(),
 });
 
 const env = EnvSchema.parse(process.env);
@@ -23,6 +26,22 @@ const stage = new Scenes.Stage<AppContext>(
   }
 );
 
+const { port, host, database, user, password } = env.PG_URL
+  ? parsePgUrl.parse(env.PG_URL)
+  : ({} as Record<string, string>);
+
+if (port && host && database && user && password) {
+  console.log("Postgres start");
+  const store = Postgres<{}>({
+    user: user,
+    host: host,
+    database: database,
+    password: password,
+  });
+  bot.use(session({ store }));
+} else {
+  bot.use(session());
+}
 bot.use(session());
 bot.use(stage.middleware());
 
